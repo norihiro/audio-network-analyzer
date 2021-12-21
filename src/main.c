@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h> // sleep
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include "source.h"
@@ -198,6 +199,9 @@ int main(int argc, char **argv)
 {
 	struct main_context mc = {0};
 	struct data_entry_t *data = NULL;
+	double period_sec = 1.25;
+	double guardband_sec = 0.25;
+	int min_cycle = 8;
 	uint64_t ts_end = 0;
 
 	for (int i=1; i<argc; i++) {
@@ -207,6 +211,27 @@ int main(int argc, char **argv)
 		}
 		else if (!strcmp(ai, "--freq-vmixer")) {
 			data = data_roland_vmixer;
+		}
+		else if (!strcmp(ai, "--period")) {
+			if (i+1 >= argc) {
+				fprintf(stderr, "Error: insufficient argument for %s\n", ai);
+				return 1;
+			}
+			period_sec = atof(argv[++i]);
+		}
+		else if (!strcmp(ai, "--guardband")) {
+			if (i+1 >= argc) {
+				fprintf(stderr, "Error: insufficient argument for %s\n", ai);
+				return 1;
+			}
+			guardband_sec = atof(argv[++i]);
+		}
+		else if (!strcmp(ai, "--min-cycle")) {
+			if (i+1 >= argc) {
+				fprintf(stderr, "Error: insufficient argument for %s\n", ai);
+				return 1;
+			}
+			min_cycle = atoi(argv[++i]);
 		}
 		else {
 			fprintf(stderr, "Error: unknown argument %s\n", ai);
@@ -220,10 +245,14 @@ int main(int argc, char **argv)
 	mc.ctx = audio_context_create();
 	mc.ctx->data = data;
 	for (int i=0; data[i].freq > 0; i++) {
-		const uint64_t period = 48000 * 12 / 10;
-		data[i].ts_begin_src = i * period + 0;
-		data[i].ts_begin_cap = i * period + 48000 * 2 / 10; // 0.2 second
-		data[i].ts_end = ts_end = (i+1) * period;
+		double p = period_sec;
+		if (p - guardband_sec < min_cycle / data[i].freq)
+			p = min_cycle / data[i].freq + guardband_sec;
+
+		const uint64_t period = 48000 * p;
+		data[i].ts_begin_src = ts_end;
+		data[i].ts_begin_cap = ts_end + 48000 * guardband_sec;
+		data[i].ts_end = ts_end = ts_end + period;
 	}
 	mc.ctx->print_entry = print_entry;
 	pa_context_set_state_callback(mc.ctx->pa, state_callback, &mc);
