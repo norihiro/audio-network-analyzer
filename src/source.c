@@ -15,7 +15,6 @@ struct source_s
 	audio_context_t *ctx;
 	pa_stream *stream;
 
-	double freq;
 	int i_sample;
 
 	uint64_t n_written;
@@ -36,7 +35,6 @@ source_t *source_create(audio_context_t *ctx)
 		fprintf(stderr, "Error: pa_stream_new failed\n");
 		goto err;
 	}
-	s->freq = 0.0;
 
 	ret = pa_stream_connect_playback(
 			s->stream,
@@ -91,21 +89,20 @@ static void source_callback(pa_stream *p, size_t nbytes, void *userdata)
 	int n_sample = nbytes / 4;
 	if (n_sample > N_SAMPLES) n_sample = N_SAMPLES;
 	for (int i=0; i<n_sample; i++) {
-		if (s->n_written >= s->ctx->data[s->i_data].ts_begin_src) {
-			if (s->ctx->data[s->i_data].freq > 0)
-				s->freq = s->ctx->data[s->i_data].freq;
-			else
-				s->freq = 0;
+		if (s->n_written == s->ctx->data[s->i_data].ts_begin_src) {
+			s->i_sample = 0;
 		}
 
+		double freq = s->ctx->data[s->i_data].freq;
+		if (freq < 0.0)
+			freq = 0.0;
 		const int rate = s->ctx->spec.rate;
-		double v = sin(s->i_sample * s->freq * 2.0 * M_PI / rate);
-		const double eps = sin(1 * s->freq * 2.0 * M_PI / rate);
+		double v = sin(s->i_sample * freq * 2.0 * M_PI / rate);
+		const double eps = sin(1 * freq * 2.0 * M_PI / rate);
 
 		buf[i*2+0] = (int16_t)(32767*v);
 		buf[i*2+1] = (int16_t)(32767*v);
-		if (++s->i_sample >= rate)
-			s->i_sample -= rate;
+		++ s->i_sample;
 
 		s->n_written += 1;
 		if (s->n_written >= s->ctx->data[s->i_data].ts_end) {

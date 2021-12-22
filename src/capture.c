@@ -15,7 +15,6 @@ struct capture_s
 	audio_context_t *ctx;
 	pa_stream *stream;
 
-	double freq;
 	int sum_n;
 	double sum_real, sum_imag;
 	int i_sample;
@@ -39,7 +38,6 @@ capture_t *capture_create(audio_context_t *ctx)
 		fprintf(stderr, "Error: pa_stream_new failed\n");
 		goto err;
 	}
-	c->freq = 0.0;
 
 	ret = pa_stream_connect_record(
 			c->stream,
@@ -90,18 +88,24 @@ static void capture_callback(pa_stream *p, size_t nbytes_, void *userdata)
 	for (int i=0; i<n_sample; i++) {
 		if (c->ctx->data[c->i_data].freq <= 0)
 			break;
-		if (c->n_read < c->ctx->data[c->i_data].ts_begin_cap)
-			capture_start(c, c->ctx->data[c->i_data].freq);
+		if (c->n_read == c->ctx->data[c->i_data].ts_begin_cap) {
+			c->sum_n = 0;
+			c->sum_real = 0.0;
+			c->sum_imag = 0.0;
+			c->i_sample = 0;
+		}
 
-		const int rate = c->ctx->spec.rate;
-		double v_real = sin(c->i_sample * c->freq * 2.0 * M_PI / rate);
-		double v_imag = cos(c->i_sample * c->freq * 2.0 * M_PI / rate);
-		double v = (double)buf[i*2+0] + (double)buf[i*2+1];
-		c->sum_n += 1;
-		c->sum_real += v * v_real / 32767.;
-		c->sum_imag += v * v_imag / 32767.;
-		if (++c->i_sample >= rate)
-			c->i_sample -= rate;
+		if (c->ctx->data[c->i_data].ts_begin_cap <= c->n_read) {
+			double freq = c->ctx->data[c->i_data].freq;
+			const int rate = c->ctx->spec.rate;
+			double v_real = sin(c->i_sample * freq * 2.0 * M_PI / rate);
+			double v_imag = cos(c->i_sample * freq * 2.0 * M_PI / rate);
+			double v = (double)buf[i*2+0] + (double)buf[i*2+1];
+			c->sum_n += 1;
+			c->sum_real += v * v_real / 32767.;
+			c->sum_imag += v * v_imag / 32767.;
+			++ c->i_sample;
+		}
 
 		c->n_read += 1;
 		if (c->n_read >= c->ctx->data[c->i_data].ts_end) {
@@ -114,16 +118,6 @@ static void capture_callback(pa_stream *p, size_t nbytes_, void *userdata)
 	}
 
 	pa_stream_drop(p);
-}
-
-int capture_start(capture_t *c, double frequency)
-{
-	c->freq = frequency;
-	c->sum_n = 0;
-	c->sum_real = 0.0;
-	c->sum_imag = 0.0;
-
-	return 0;
 }
 
 int capture_measure(capture_t *c, double *real, double *imag)

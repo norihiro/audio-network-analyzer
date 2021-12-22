@@ -249,6 +249,8 @@ int main(int argc, char **argv)
 		if (p - guardband_sec < min_cycle / data[i].freq)
 			p = min_cycle / data[i].freq + guardband_sec;
 
+		p = ceil(p * data[i].freq) / data[i].freq;
+
 		const uint64_t period = 48000 * p;
 		data[i].ts_begin_src = ts_end;
 		data[i].ts_begin_cap = ts_end + 48000 * guardband_sec;
