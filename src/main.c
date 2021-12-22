@@ -199,9 +199,9 @@ int main(int argc, char **argv)
 {
 	struct main_context mc = {0};
 	struct data_entry_t *data = NULL;
-	double period_sec = 1.25;
+	double period_sec = 0.25;
 	double guardband_sec = 0.25;
-	int min_cycle = 8;
+	int min_cycle = 24;
 	uint64_t ts_end = 0;
 
 	for (int i=1; i<argc; i++) {
