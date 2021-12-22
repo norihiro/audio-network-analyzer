@@ -88,11 +88,11 @@ static void capture_callback(pa_stream *p, size_t nbytes_, void *userdata)
 	for (int i=0; i<n_sample; i++) {
 		if (c->ctx->data[c->i_data].freq <= 0)
 			break;
-		if (c->n_read == c->ctx->data[c->i_data].ts_begin_cap) {
+		if (c->n_read == c->ctx->data[c->i_data].ts_begin_src) {
+			c->i_sample = 0;
 			c->sum_n = 0;
 			c->sum_real = 0.0;
 			c->sum_imag = 0.0;
-			c->i_sample = 0;
 		}
 
 		if (c->ctx->data[c->i_data].ts_begin_cap <= c->n_read) {
@@ -104,11 +104,12 @@ static void capture_callback(pa_stream *p, size_t nbytes_, void *userdata)
 			c->sum_n += 1;
 			c->sum_real += v * v_real / 32767.;
 			c->sum_imag += v * v_imag / 32767.;
-			++ c->i_sample;
 		}
 
+		++ c->i_sample;
+
 		c->n_read += 1;
-		if (c->n_read >= c->ctx->data[c->i_data].ts_end) {
+		if (c->n_read == c->ctx->data[c->i_data].ts_end) {
 			struct data_entry_t *data = c->ctx->data + c->i_data;
 			capture_measure(c, &data->real, &data->imag);
 			if (c->ctx->print_entry)
