@@ -98,7 +98,6 @@ static void source_callback(pa_stream *p, size_t nbytes, void *userdata)
 			freq = 0.0;
 		const int rate = s->ctx->spec.rate;
 		double v = sin(s->i_sample * freq * 2.0 * M_PI / rate);
-		const double eps = sin(1 * freq * 2.0 * M_PI / rate);
 
 		buf[i*2+0] = (int16_t)(32767*v);
 		buf[i*2+1] = (int16_t)(32767*v);

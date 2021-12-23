@@ -77,6 +77,7 @@ void capture_release(capture_t *c)
 
 static void capture_callback(pa_stream *p, size_t nbytes_, void *userdata)
 {
+	(void)nbytes_; // unused parameter
 	capture_t *c = userdata;
 
 	const void *data;

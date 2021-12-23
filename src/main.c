@@ -259,7 +259,6 @@ int main(int argc, char **argv)
 	mc.ctx->print_entry = print_entry;
 	pa_context_set_state_callback(mc.ctx->pa, state_callback, &mc);
 
-	int cnt = 1024*4;
 	int retval = 0;
 	while (pa_mainloop_iterate(mc.ctx->mainloop, 1024, &retval) >= 0) {
 		if (mc.src && mc.cap) {

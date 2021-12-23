@@ -4,8 +4,6 @@
 #include "context.h"
 #include "context-internal.h"
 
-static pa_mainloop *mainloop = NULL;
-
 audio_context_t *audio_context_create()
 {
 	audio_context_t *ctx = calloc(1, sizeof(audio_context_t));
