@@ -203,6 +203,7 @@ int main(int argc, char **argv)
 	double guardband_sec = 0.25;
 	int min_cycle = 24;
 	uint64_t ts_end = 0;
+	uint32_t data_flags = 0;
 
 	for (int i=1; i<argc; i++) {
 		char *ai = argv[i];
@@ -233,6 +234,12 @@ int main(int argc, char **argv)
 			}
 			min_cycle = atoi(argv[++i]);
 		}
+		else if (!strcmp(ai, "--source-left")) {
+			data_flags |= SRC_MUTE_RIGHT;
+		}
+		else if (!strcmp(ai, "--source-right")) {
+			data_flags |= SRC_MUTE_LEFT;
+		}
 		else {
 			fprintf(stderr, "Error: unknown argument %s\n", ai);
 			return 1;
@@ -255,6 +262,7 @@ int main(int argc, char **argv)
 		data[i].ts_begin_src = ts_end;
 		data[i].ts_begin_cap = ts_end + 48000 * guardband_sec;
 		data[i].ts_end = ts_end = ts_end + period;
+		data[i].flags = data_flags;
 	}
 	mc.ctx->print_entry = print_entry;
 	pa_context_set_state_callback(mc.ctx->pa, state_callback, &mc);

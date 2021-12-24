@@ -100,8 +100,10 @@ static void source_callback(pa_stream *p, size_t nbytes, void *userdata)
 			const int rate = s->ctx->spec.rate;
 			double v = sin(s->i_sample * freq * 2.0 * M_PI / rate);
 
-			buf[i*2+0] = (int16_t)(32767*v);
-			buf[i*2+1] = (int16_t)(32767*v);
+			uint32_t flags = s->ctx->data[s->i_data].flags;
+
+			buf[i*2+0] = flags & SRC_MUTE_LEFT  ? 0 : (int16_t)(32767*v);
+			buf[i*2+1] = flags & SRC_MUTE_RIGHT ? 0 : (int16_t)(32767*v);
 			++ s->i_sample;
 
 			s->n_written += 1;
